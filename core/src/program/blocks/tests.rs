@@ -1,4 +1,4 @@
-use super::{HashMap, OpCode, OpHint, Span, BaseElement, FieldElement};
+use super::{BaseElement, FieldElement, HashMap, OpCode, OpHint, Span};
 
 #[test]
 fn span_hash() {
