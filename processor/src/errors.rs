@@ -3,7 +3,7 @@ use super::{AdviceSetError, CodeBlock, Felt};
 // EXECUTION ERROR
 // ================================================================================================
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExecutionError {
     UnsupportedCodeBlock(CodeBlock),
     UnexecutableCodeBlock(CodeBlock),

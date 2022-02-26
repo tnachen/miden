@@ -1,7 +1,7 @@
 use super::{
-    execute, ExecutionError, ExecutionTrace, Felt, FieldElement, Process, ProgramInputs, Script,
-    Word, STACK_TOP_SIZE,
+    execute, execute_iter, ExecutionError, ExecutionTrace, Felt, FieldElement, ProgramInputs, Script, VmState, STACK_TOP_SIZE, Process
 };
+use crate::Word;
 use proptest::prelude::*;
 
 mod aux_table_trace;
@@ -19,6 +19,20 @@ mod u32_ops;
 fn simple_program() {
     let test = Test::new("begin push.1 push.2 add end");
     test.expect_stack(&[3]);
+}
+
+
+#[test]
+fn simple_exec_iter() {
+    let test = Test::new("begin push.1 push.2 add end");
+    let states = test.execute_iter();
+    assert_eq!(7, states.len());
+    for i in 0..7 {
+        let result = states[i].as_ref();
+        assert!(!result.is_err());
+        let state = result.unwrap();
+        assert_eq!(i, state.clk);
+    }
 }
 
 // TEST HANDLER
@@ -149,6 +163,11 @@ impl Test {
     fn execute(&self) -> Result<ExecutionTrace, ExecutionError> {
         let script = self.compile();
         execute(&script, &self.inputs)
+    }
+
+    fn execute_iter(&self) -> Vec<Result<VmState, ExecutionError>> {
+        let script = self.compile();
+        execute_iter(&script, &self.inputs).collect::<Vec<Result<VmState, ExecutionError>>>()
     }
 
     /// Returns the last state of the stack after executing a test.

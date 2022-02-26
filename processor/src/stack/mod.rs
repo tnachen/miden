@@ -1,14 +1,24 @@
 use super::{ExecutionError, Felt, FieldElement, ProgramInputs, StackTrace, STACK_TOP_SIZE};
 use core::cmp;
 
+mod overflow;
+use overflow::OverflowTable;
+
 // STACK
 // ================================================================================================
 
-/// TODO: add comments
+/// Stack stores the values on the stack.
+/// It is a fixed size stack with depth recording the length of the stack.
+/// Trace stores the stack values at each clock cycle.
+/// The overflow table stores stack values that exceeds the max size of the stack.
+/// The overflow deletion table tracks all the deletion from overflow table
+/// so we can reconstruct what is the overflow table at any clock cycle.
+///
+/// TODO: Add more detailed descriptions of the stack.
 pub struct Stack {
     step: usize,
     trace: StackTrace,
-    overflow: Vec<Felt>,
+    overflow: OverflowTable,
     depth: usize,
 }
 
@@ -16,7 +26,11 @@ impl Stack {
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
     /// TODO: add comments
-    pub fn new(inputs: &ProgramInputs, init_trace_length: usize) -> Self {
+    pub fn new(
+        inputs: &ProgramInputs,
+        init_trace_length: usize,
+        keep_overflow_trace: bool,
+    ) -> Self {
         let init_values = inputs.stack_init();
         let mut trace: Vec<Vec<Felt>> = Vec::with_capacity(STACK_TOP_SIZE);
         for i in 0..STACK_TOP_SIZE {
@@ -30,7 +44,7 @@ impl Stack {
         Self {
             step: 0,
             trace: trace.try_into().expect("failed to convert vector to array"),
-            overflow: Vec::new(),
+            overflow: OverflowTable::new(keep_overflow_trace),
             depth: init_values.len(),
         }
     }
@@ -77,7 +91,7 @@ impl Stack {
 
         if num_items > STACK_TOP_SIZE {
             let num_overflow_items = num_items - STACK_TOP_SIZE;
-            result.extend_from_slice(&self.overflow[..num_overflow_items]);
+            self.overflow.append_into(num_overflow_items, &mut result);
         }
 
         result
@@ -93,6 +107,21 @@ impl Stack {
         for (result, column) in result.iter_mut().zip(self.trace.iter()) {
             *result = column[self.step];
         }
+
+        result
+    }
+
+    /// Returns stack state at the specified clock cycle.
+    ///
+    /// This includes the stack + overflow entries.
+    pub fn get_state_at(&self, step: usize) -> Vec<Felt> {
+        let mut result = Vec::with_capacity(self.depth);
+        for column in self.trace.iter() {
+            result.push(column[step]);
+        }
+
+        self.overflow.append_state_into(step, &mut result);
+
         result
     }
 
@@ -160,7 +189,10 @@ impl Stack {
                 for i in start_pos..STACK_TOP_SIZE {
                     self.trace[i - 1][self.step + 1] = self.trace[i][self.step];
                 }
-                let from_overflow = self.overflow.pop().expect("overflow stack is empty");
+                let from_overflow = self
+                    .overflow
+                    .pop(self.step)
+                    .expect("overflow stack is empty");
                 self.trace[STACK_TOP_SIZE - 1][self.step + 1] = from_overflow;
             }
         }
@@ -196,7 +228,7 @@ impl Stack {
                     self.trace[i + 1][self.step + 1] = self.trace[i][self.step];
                 }
                 let to_overflow = self.trace[MAX_TOP_IDX][self.step];
-                self.overflow.push(to_overflow)
+                self.overflow.push(self.step, to_overflow);
             }
         }
 

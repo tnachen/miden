@@ -40,6 +40,9 @@ use trace::TraceFragment;
 mod errors;
 pub use errors::ExecutionError;
 
+mod debug;
+pub use debug::{VmState, VmStateIterator};
+
 #[cfg(test)]
 mod tests;
 
@@ -64,6 +67,17 @@ pub fn execute(script: &Script, inputs: &ProgramInputs) -> Result<ExecutionTrace
     Ok(ExecutionTrace::new(process))
 }
 
+/// Returns an iterator that allows callers to step through each exceution and inspect
+/// vm state information along side.
+pub fn execute_iter(
+    script: &Script,
+    inputs: &ProgramInputs,
+) -> VmStateIterator {
+    let mut process = Process::new_debug(inputs.clone());
+    let result = process.execute_code_block(script.root());
+    VmStateIterator::new(process, result)
+}
+
 // PROCESS
 // ================================================================================================
 
@@ -78,16 +92,29 @@ struct Process {
 }
 
 impl Process {
-    pub fn new(inputs: ProgramInputs) -> Self {
-        Self {
+    /// Creates a new process with the provided inputs.
+    /// The keep_overflow_trace flag enables the overflow table in the stack to record
+    /// traces, which can be used to step through each clock cycle.
+    fn initialize(inputs: ProgramInputs, keep_overflow_trace: bool) -> Process {
+        Process {
             system: System::new(4),
             decoder: Decoder::new(),
-            stack: Stack::new(&inputs, 4),
+            stack: Stack::new(&inputs, 4, keep_overflow_trace),
             hasher: Hasher::new(),
             bitwise: Bitwise::new(),
             memory: Memory::new(),
             advice: AdviceProvider::new(inputs),
         }
+    }
+
+    /// Creates a new process with the provided inputs.
+    pub fn new(inputs: ProgramInputs) -> Self {
+        Self::initialize(inputs, false)
+    }
+
+    /// Creates a new process with provided inputs and debug options enabled.
+    pub fn new_debug(inputs: ProgramInputs) -> Self {
+        Self::initialize(inputs, true)
     }
 
     // CODE BLOCK EXECUTORS
