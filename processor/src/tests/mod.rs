@@ -1,11 +1,13 @@
 use super::{
-    execute, execute_iter, ExecutionError, ExecutionTrace, Felt, FieldElement, ProgramInputs, Script, VmState, STACK_TOP_SIZE, Process
+    execute, execute_iter, ExecutionError, ExecutionTrace, Felt, FieldElement, Process,
+    ProgramInputs, Script, VmState, STACK_TOP_SIZE,
 };
 use crate::Word;
 use proptest::prelude::*;
 
 mod aux_table_trace;
 mod crypto_ops;
+mod exec_iters;
 mod field_ops;
 mod flow_control;
 mod io_ops;
@@ -20,7 +22,6 @@ fn simple_program() {
     let test = Test::new("begin push.1 push.2 add end");
     test.expect_stack(&[3]);
 }
-
 
 #[test]
 fn simple_exec_iter() {

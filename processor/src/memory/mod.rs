@@ -1,5 +1,6 @@
 use super::{Felt, FieldElement, StarkField, TraceFragment, Word};
 use core::ops::RangeInclusive;
+use std::cmp::max;
 use winter_utils::collections::BTreeMap;
 
 #[cfg(test)]
@@ -242,7 +243,7 @@ impl Memory {
                 match addr_trace.binary_search_by(|(x, _)| x.as_int().cmp(&(s as u64))) {
                     Ok(i) => data.push((addr, addr_trace[i].1)),
                     Err(i) => {
-                        data.push((addr, addr_trace[i - 1].1));
+                        data.push((addr, addr_trace[max(0, i - 1)].1));
                     }
                 }
             }

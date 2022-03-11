@@ -69,10 +69,7 @@ pub fn execute(script: &Script, inputs: &ProgramInputs) -> Result<ExecutionTrace
 
 /// Returns an iterator that allows callers to step through each exceution and inspect
 /// vm state information along side.
-pub fn execute_iter(
-    script: &Script,
-    inputs: &ProgramInputs,
-) -> VmStateIterator {
+pub fn execute_iter(script: &Script, inputs: &ProgramInputs) -> VmStateIterator {
     let mut process = Process::new_debug(inputs.clone());
     let result = process.execute_code_block(script.root());
     VmStateIterator::new(process, result)

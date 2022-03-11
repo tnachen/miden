@@ -153,6 +153,15 @@ fn execute_loop() {
     );
 }
 
+#[test]
+fn execute_memory_iter() {
+    let program = assembly::compile("begin popw.mem.1 popw.mem.2 end").unwrap();
+    let inputs = ProgramInputs::from_public(&[1, 2, 3, 4, 5, 6, 7, 8]);
+
+    let traces = processor::execute_iter(&program, &inputs).collect();
+    assert_eq!(6, traces.len())
+}
+
 fn get_trace_state(trace: &TraceTable<BaseElement>, step: usize) -> TraceState<BaseElement> {
     let meta = TraceMetadata::from_trace_info(&trace.get_info());
     let mut row = vec![BaseElement::ZERO; trace.width()];
