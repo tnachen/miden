@@ -62,6 +62,11 @@ impl Iterator for VmStateIterator {
             }
         }
 
+        let mut mem_clk = self.clk;
+        if mem_clk > 0 {
+            mem_clk -= 1;
+        }
+
         let result = Some(Ok(VmState {
             clk: self.clk,
             fmp: self.process.system.get_fmp_at(self.clk),
@@ -69,7 +74,7 @@ impl Iterator for VmStateIterator {
             memory: self
                 .process
                 .memory
-                .get_values_at(0..=u64::MAX, Some(self.clk)),
+                .get_values_at(0..=u64::MAX, Some(mem_clk)),
         }));
 
         self.clk += 1;
