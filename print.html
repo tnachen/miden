@@ -76,7 +76,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Miden</a></li><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="user_docs.html"><strong aria-hidden="true">2.</strong> User Documentation</a></li><li class="chapter-item expanded "><a href="design.html"><strong aria-hidden="true">3.</strong> Design</a></li><li class="chapter-item expanded "><a href="background.html"><strong aria-hidden="true">4.</strong> Background Material</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Miden</a></li><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="user_docs.html"><strong aria-hidden="true">2.</strong> User Documentation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="user_docs/overview/vm_overview.html"><strong aria-hidden="true">2.1.</strong> Miden VM Overview</a></li><li class="chapter-item expanded "><a href="user_docs/assembly/miden_assembly.html"><strong aria-hidden="true">2.2.</strong> Miden Assembly</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="user_docs/assembly/design_goals.html"><strong aria-hidden="true">2.2.1.</strong> Design Goals</a></li><li class="chapter-item expanded "><a href="user_docs/assembly/code_organization.html"><strong aria-hidden="true">2.2.2.</strong> Code Organization</a></li><li class="chapter-item expanded "><a href="user_docs/assembly/inputs_and_outputs.html"><strong aria-hidden="true">2.2.3.</strong> Inputs And Outputs</a></li><li class="chapter-item expanded "><a href="user_docs/assembly/flow_control.html"><strong aria-hidden="true">2.2.4.</strong> Flow Control</a></li><li class="chapter-item expanded "><a href="user_docs/assembly/field_operations.html"><strong aria-hidden="true">2.2.5.</strong> Field Operations</a></li><li class="chapter-item expanded "><a href="user_docs/assembly/io_operations.html"><strong aria-hidden="true">2.2.6.</strong> Input / Output Operations</a></li><li class="chapter-item expanded "><a href="user_docs/assembly/cryptographic_operations.html"><strong aria-hidden="true">2.2.7.</strong> Cryptographic Operations</a></li><li class="chapter-item expanded "><a href="user_docs/assembly/debugging.html"><strong aria-hidden="true">2.2.8.</strong> Debugging</a></li></ol></li><li class="chapter-item expanded "><a href="miden_stdlib.html"><strong aria-hidden="true">2.3.</strong> Miden Standard Library</a></li></ol></li><li class="chapter-item expanded "><a href="design.html"><strong aria-hidden="true">3.</strong> Design</a></li><li class="chapter-item expanded "><a href="background.html"><strong aria-hidden="true">4.</strong> Background Material</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -315,7 +315,342 @@
 <div style="break-before: page; page-break-before: always;"></div><h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
 <p>TODO</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="user-documentation"><a class="header" href="#user-documentation">User Documentation</a></h1>
-<p>TODO</p>
+<ul>
+<li><a href="./miden_assembly.html">Miden Assembly</a></li>
+<li><a href="./miden_stdlib.html">Miden Standard Library</a></li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="miden-vm-overview"><a class="header" href="#miden-vm-overview">Miden VM overview</a></h2>
+<p>Miden VM is a stack machine. The base data type of the MV is a field element in a 64-bit <a href="https://en.wikipedia.org/wiki/Finite_field">prime field</a> defined by modulus $p = 2^{64} - 2^{32} + 1$. This means that all values that the VM operates with are field elements in this field (i.e., values between $0$ and $2^{64} - 2^{32}$, both inclusive).</p>
+<p>Throughout this document, we use lower-case letters to refer to individual field elements (e.g., $a$). Sometimes it is convenient to describe operations over groups of elements. For these purposes we define a <em>word</em> to be a group of four elements. We use upper-case letters to refer to words (e.g., $A$). To refer to individual elements within a word, we use numerical subscripts. For example, $a_0$ is the first element of word $A$, $b_3$ is the last element of word $B$, etc.</p>
+<p>Miden VM consists of three high-level components as illustrated below.</p>
+<p><img src="https://hackmd.io/_uploads/SyERLVphK.png" alt="" /></p>
+<p>These components are:</p>
+<ul>
+<li><strong>Stack</strong> which is a push-down stack where each item is a field element. Most assembly instructions operate with values located on the stack. The stack can grow up to $2^{16}$ items deep, however, only the top 16 items are directly accessible.</li>
+<li><strong>Memory</strong> which is a linear random-access read-write memory. The memory is word-addressable, meaning, four elements are located at each address, and we can read and write elements to/from memory in batches of four. Memory addresses can be in the range $[0, 2^{32})$.</li>
+<li><strong>Advice provider</strong> which is a way for the prover to provide non-deterministic inputs to the VM. The advice provider contains a single <em>advice tape</em> and unlimited number of <em>advice sets</em>. The latter contain structured data which can be interpreted as a set of Merkle paths.</li>
+</ul>
+<p>In the future, additional components (e.g., storage, logs) may be added to the VM.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="miden-assembly"><a class="header" href="#miden-assembly">Miden Assembly</a></h1>
+<h6 id="tags-specs-assembly-draft"><a class="header" href="#tags-specs-assembly-draft">tags: <code>specs</code> <code>assembly</code> <code>draft</code></a></h6>
+<p>Version: v0.2</p>
+<p>Miden assembly is a simple, low-level language for writing programs for Miden VM. It stands just above raw Miden VM instruction set, and in fact, many instructions of Miden assembly map directly to raw instructions of Miden VM.</p>
+<p>Before Miden assembly can be executed on Miden VM, it needs to be compiled into a <a href="https://hackmd.io/yr-ieh7SSKOzWw7Kdo9gnA">Program MAST</a> (Merkelized Abstract Syntax Tree) which is a binary tree of code blocks each containing raw Miden VM instructions.</p>
+<p><img src="https://i.imgur.com/NnV0bwN.png" alt="" /></p>
+<p>As compared to raw Miden VM instructions, Miden assembly has several advantages:</p>
+<ol>
+<li>Miden assembly is intended to be a more stable external interface for the VM. That is, while we plan to make signficant changes to the underlying VM to optimize it for stability, performance etc., we intend to make very few breaking changes to Miden assembly.</li>
+<li>Miden assembly natively supports control flow expressions which the assembler automatically transforms into a program MAST. This greatly simplifies writing programs with complex execution logic.</li>
+<li>Miden assembly supports <em>macro instructions</em>. These instructions expand into short sequences of raw Miden VM instructions making it easier to encode common operations.</li>
+<li>Miden assembly supports <em>procedures</em>. These are stand-alone blocks of code which the assembler inlines into program MAST at compile time. This improves program modularity and code organization.</li>
+</ol>
+<p>The last two points also make Miden assembly much more concise as compared to the raw program MAST. This may be important in the blockchain context where pubic programs need to be stored on chain.</p>
+<h3 id="terms-and-notations"><a class="header" href="#terms-and-notations">Terms and notations</a></h3>
+<p>In this note we use the following terms and notations:</p>
+<ul>
+<li>$p$ is the modulus of the VM's base field which is equal to $2^{64} - 2^{32} + 1$.</li>
+<li>A <em>binary</em> value means a field element which is either $0$ or $1$.</li>
+<li>Inequality comparisons are assumed to be performed on integer representations of field elements in the range $[0, p)$.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h3 id="design-goals"><a class="header" href="#design-goals">Design goals</a></h3>
+<p>The design of Miden assembly tries to achieve the following goals:</p>
+<ol>
+<li>Miden assembly should be an easy compilation target for high-level languages.</li>
+<li>Programs written in Miden assembly should be readable, even if the code is generated by a compiler from a high-level language.</li>
+<li>Control flow should be easy to understand to help in manual inspection, formal verification, and optimization.</li>
+<li>Compilation of Miden assembly into Miden program MAST should be as straight-forward as possible.</li>
+<li>Serialization of Miden assembly into a binary representation should be as compact and as straight-forward as possible.</li>
+</ol>
+<p>In order to achieve the first goal, Miden assembly exposes a set of native operations over 32-bit integers and supports linear read-write memory. Thus, from the stand-point of a higher-level language compiler, Miden VM can be viewed as a regular 32-bit stack machine with linear read-write memory.</p>
+<p>In order to achieve the second and third goals, Miden assembly facilitates flow control via high-level constructs like <code>while</code> loops, <code>if-else</code> statements, and function calls with statically defined targets. Thus, for example, there are no explicit <code>jump</code> instructions.</p>
+<p>In order to achieve the fourth goal, Miden assembly retains direct access to the VM stack rather than abstracting it away with higher-level constructs and named variables.</p>
+<p>Lastly, in order to achieve the fifth goal, each instruction of Miden assembly can be encoded using a single byte. The resulting byte-code is simply a one-to-one mapping of instructions to their binary values.</p>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="code-organization"><a class="header" href="#code-organization">Code organization</a></h2>
+<p>A Miden assembly program is just a sequence of instructions each describing a specific directive or an operation. You can use any combination of whitespace characters to separate one instruction from another.</p>
+<p>In turn, Miden assembly instructions are just keywords which can be parameterized by zero or more parameters. The notation for specifying parameters is <em>keyword.param1.param2</em> - i.e., the parameters are separated by periods. For example, <code>push.123</code> instruction denotes a <code>push</code> operation which is parameterized by value <code>123</code>.</p>
+<p>Currently, Miden assembly provides two types of code organization blocks: <em>scripts</em> and <em>procedures</em>. In the future, additional blocks such as modules and functions will be added.</p>
+<h3 id="scripts"><a class="header" href="#scripts">Scripts</a></h3>
+<p>A <em>script</em> block is used to define an executable program. A script must start with a <code>begin</code> instruction and terminate with an <code>end</code> instruction. For example:</p>
+<pre><code>begin
+    &lt;instructions&gt;
+end
+</code></pre>
+<p>When Miden assembly code is executed, the execution starts at the first instruction following the <code>begin</code> instruction of the script. A script block is expected to be the last block in a program and can be followed only by comment blocks.</p>
+<h3 id="procedures"><a class="header" href="#procedures">Procedures</a></h3>
+<p>A <em>procedure</em> block is used to define a frequently-used sequence of instructions. A procedure must start with a <code>proc.&lt;label&gt;.&lt;number of locals&gt;</code> instruction and terminate with an <code>end</code> instruction. For example:</p>
+<pre><code>proc.foo.2
+    &lt;instructions&gt;
+end
+</code></pre>
+<p>A procedure label must start with a letter and can contain any combination of numbers, ASCII letters, and underscores (<code>_</code>).</p>
+<p>The number of locals specifies the number of memory-based local words a procedure can access (via <code>load.local</code>, <code>store.local</code>, and other instructions). If a procedure doesn't need any memory-based locals, this parameter can be omitted or set to <code>0</code>. The number of locals per procedure is not limited, but the total number of locals available to all procedures at runtime must be smaller than $2^{32}$.</p>
+<p>To execute a procedure an <code>exec.&lt;label&gt;</code> instruction should be used. For example:</p>
+<pre><code>exec.foo
+</code></pre>
+<p>During compilation, procedures are inlined at their call sites. Thus, from the standpoint of the final program, executing procedures is indistinguishable from manually including procedure code in place of the <code>exec</code> instruction.</p>
+<p>A procedure may execute any other previously defined procedure from the same source, but it cannot execute itself or any of the subsequent procedures. Thus, recursive procedure calls are not possible. For example, the following code block defines a script with two procedures:</p>
+<pre><code>proc.foo
+    &lt;instructions&gt;
+end
+
+proc.bar
+    &lt;instructions&gt;
+    exec.foo
+    &lt;instructions&gt;
+end
+
+begin
+    &lt;instructions&gt;
+    exec.bar
+    &lt;instructions&gt;
+    exec.foo
+end
+</code></pre>
+<h3 id="comments"><a class="header" href="#comments">Comments</a></h3>
+<p>Miden assembly allows annotating code with simple comments. The comments must be placed between two <code>#</code> (pound) characters which must be surrounded by whitespace on both sides. For example:</p>
+<pre><code># this is a comment #
+</code></pre>
+<p>Using a pound character within a comment is not allowed.</p>
+<p>When Miden assembly is serialized into binary format, comments are not retained.</p>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="inputs-and-outputs"><a class="header" href="#inputs-and-outputs">Inputs and outputs</a></h2>
+<p>External inputs can be provided to Miden VM in two way:</p>
+<ol>
+<li>Public inputs can be supplied to the VM by initializing the stack with desired values before a program starts executing. Up to 16 stack items can be initialized in this way.</li>
+<li>Secret (or non-deterministic) inputs can be supplied to the VM via the <em>advice provider</em> (described below). There is no limit on how much data the advice provider can hold.</li>
+</ol>
+<p>After a program finishes executing up to 16 elements can remain on the stack. These elements then become the outputs of the program.</p>
+<p>Having only 16 elements to describe public inputs and outputs of a program may seem limiting, however, just 4 elements are sufficient to represent a root of a Merkle tree which can be expanded into an arbitrary number of values.</p>
+<p>For example, if we wanted to provide a thousand public input values to the VM, we could put these values into a Merkle tree, initialize the stack with the root of this tree, initialize the advice provides with the tree itself, and then retrieve values from the tree during program execution using <code>mtree.get</code> instruction (described <a href="user_docs/assembly/inputs_and_outputs.html#Hashing-and-Merkle-trees">here</a>).</p>
+<p>In the future, other ways of providing public inputs and reading public outputs (e.g., storage commitments) may be added to the VM.</p>
+<h3 id="non-deterministic-inputs"><a class="header" href="#non-deterministic-inputs">Non-deterministic inputs</a></h3>
+<p>The <em>advice provider</em> component is responsible for supplying non-deterministic inputs to the VM. These inputs need to be known only to the prover (i.e., they do not need to be shared with the verifier).</p>
+<p>The advice provider consists of two components:</p>
+<ul>
+<li><strong>Advice tape</strong> which is a one-dimensional array of values. The VM can access only the head of the tape. That is the VM can either remove values from the head of the tape or inject new values at the head of the tape. Formally, this means that the advice tape is actually a stack.</li>
+<li><strong>Advice sets</strong> which contain structured data reduceable to Merkle paths. Some examples of advice sets are: Merkle tree, Sparse Merkle tree, a collection of Merkle paths. Every advice set can be uniquely identified by its root. The VM can request Merkle paths from an advice set, as well as update an advice set by modifying one of its nodes (this will also change the root of the modified advice set).</li>
+</ul>
+<p>The prover initializes the advice provider prior to executing a program, and from that point on the advice provider is manipulated solely by executing operations on the VM.</p>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="flow-control"><a class="header" href="#flow-control">Flow control</a></h2>
+<p>As mentioned above, Miden assembly provides high-level constructs to facilitate flow control. These constructs are:</p>
+<ul>
+<li><em>if-else</em> expressions for conditional execution.</li>
+<li><em>repeat</em> expressions for bounded counter-controlled loops.</li>
+<li><em>while</em> expressions for unbounded condition-controlled loops.</li>
+</ul>
+<h3 id="conditional-execution"><a class="header" href="#conditional-execution">Conditional execution</a></h3>
+<p>Conditional execution in Miden VM can be accomplished with <em>if-else</em> statements. These statements look like so:</p>
+<pre><code>if.true
+    &lt;instructions&gt;
+else
+    &lt;instructions&gt;
+end
+</code></pre>
+<p>where <code>instructions</code> can be a sequence of any instructions, including nested control structures; the <code>else</code> clause is optional. The above does the following:</p>
+<ol>
+<li>Pops the top item from the stack.</li>
+<li>If the value of the item is $1$, instructions in the <code>if.true</code> branch are executed.</li>
+<li>If the value of the item is $0$, instructions in the <code>else</code> branch are executed.</li>
+<li>If the value is not binary, the execution fails.</li>
+</ol>
+<p>A note on performance: using <em>if-else</em> statements incurs a small, but non-negligible overhead. Thus, for simple conditional statements, it may be more efficient to compute the result of both branches, and then select the result using <a href="user_docs/assembly/flow_control.html#Conditional-manipulation">conditional drop</a> instructions.</p>
+<h3 id="counter-controlled-loops"><a class="header" href="#counter-controlled-loops">Counter-controlled loops</a></h3>
+<p>Executing a sequence of instructions a predefined number of times can be accomplished with <em>repeat</em> statements. These statements look like so:</p>
+<pre><code>repeat.&lt;count&gt;
+    &lt;instructions&gt;
+end
+</code></pre>
+<p>where:</p>
+<ul>
+<li><code>instructions</code> can be a sequence of any instructions, including nested control structures.</li>
+<li><code>count</code> is the number of times the <code>instructions</code> sequence should be repeated (e.g. <code>repeat.10</code>). <code>count</code> must be an integer greater than $0$.</li>
+</ul>
+<h3 id="condition-controlled-loops"><a class="header" href="#condition-controlled-loops">Condition-controlled loops</a></h3>
+<p>Executing a sequence of instructions zero or more times based on some condition can be accomplished with <em>while loop</em> expressions. These expressions look like so:</p>
+<pre><code>while.true
+    &lt;instructions&gt;
+end
+</code></pre>
+<p>where <code>instructions</code> can be a sequence of any instructions, including nested control structures. The above does the following:</p>
+<ol>
+<li>Pops the top item from the stack.</li>
+<li>If the value of the item is $1$, <code>instructions</code> in the loop body are executed.
+a. After the body is executed, the stack is popped again, and if the popped value is $1$, the body is executed again.
+b. If the popped value is $0$, the loop is exited.
+c. If the popped value is not binary, the execution fails.</li>
+<li>If the value of the item is $0$, execution of loop body is skipped.</li>
+<li>If the value is not binary, the execution fails.</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="field-operations"><a class="header" href="#field-operations">Field operations</a></h2>
+<p>Miden assembly provides a set of instructions which can perform operations with raw field elements. These instructions are described in the tables below.</p>
+<p>While most operations place no restrictions on inputs, some operations expect inputs to be binary values, and fail if executed with non-binary inputs.</p>
+<p>For instructions where one or more operands can be provided as immediate parameters (e.g., <code>add</code> and <code>add.b</code>), we provide stack transition diagrams only for the non-immediate version. For the immediate version, it can be assumed that the operand with the specified name is not present on the stack.</p>
+<h3 id="assertions-and-tests"><a class="header" href="#assertions-and-tests">Assertions and tests</a></h3>
+<table><thead><tr><th>Instruction</th><th>Stack_input</th><th>Stack_output</th><th>Notes</th></tr></thead><tbody>
+<tr><td>assert</td><td>[a, ...]</td><td>[...]</td><td>If $a = 1$, removes it from the stack. <br> Fails if $a \ne 1$</td></tr>
+<tr><td>assert.eq</td><td>[b, a, ...]</td><td>[...]</td><td>If $a = b$, removes them from the stack. <br> Fails if $a \ne b$</td></tr>
+</tbody></table>
+<h3 id="arithmetic-and-boolean-operations"><a class="header" href="#arithmetic-and-boolean-operations">Arithmetic and Boolean operations</a></h3>
+<table><thead><tr><th>Instruction</th><th>Stack_input</th><th>Stack_output</th><th>Notes</th></tr></thead><tbody>
+<tr><td>add <br> add.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow (a + b) \mod p$</td></tr>
+<tr><td>sub <br> sub.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow (a - b) \mod p$</td></tr>
+<tr><td>mul <br> mul.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow (a \cdot b) \mod p$</td></tr>
+<tr><td>div <br> div.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow (a \cdot b^{-1}) \mod p$ <br> Fails if $b = 0$</td></tr>
+<tr><td>neg</td><td>[a, ...]</td><td>[b, ...]</td><td>$b \leftarrow -a \mod p$</td></tr>
+<tr><td>inv</td><td>[a, ...]</td><td>[b, ...]</td><td>$b \leftarrow a^{-1} \mod p$ <br> Fails if $a = 0$</td></tr>
+<tr><td>pow2</td><td>[a, ...]</td><td>[b, ...]</td><td>$b \leftarrow 2^a$ <br> Fails if $a &gt; 63$</td></tr>
+<tr><td>not</td><td>[a, ...]</td><td>[b, ...]</td><td>$b \leftarrow 1 - a$ <br> Fails if $a &gt; 1$</td></tr>
+<tr><td>and</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow a \cdot b$ <br> Fails if $max(a, b) &gt; 1$</td></tr>
+<tr><td>or</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow a + b - a \cdot b$ <br> Fails if $max(a, b) &gt; 1$</td></tr>
+<tr><td>xor</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow a + b - 2 \cdot a \cdot b$ <br> Fails if $max(a, b) &gt; 1$</td></tr>
+</tbody></table>
+<h3 id="comparison-operations"><a class="header" href="#comparison-operations">Comparison operations</a></h3>
+<table><thead><tr><th>Instruction</th><th>Stack_input</th><th>Stack_output</th><th>Notes</th></tr></thead><tbody>
+<tr><td>eq <br> eq.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a=b \ 0, &amp; \text{otherwise}\ \end{cases}$</td></tr>
+<tr><td>neq <br> neq.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a \ne b \ 0, &amp; \text{otherwise}\ \end{cases}$</td></tr>
+<tr><td>lt</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a &lt; b \ 0, &amp; \text{otherwise}\ \end{cases}$</td></tr>
+<tr><td>lte</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a \le b \ 0, &amp; \text{otherwise}\ \end{cases}$</td></tr>
+<tr><td>gt</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a &gt; b \ 0, &amp; \text{otherwise}\ \end{cases}$</td></tr>
+<tr><td>gte</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a \ge b \ 0, &amp; \text{otherwise}\ \end{cases}$</td></tr>
+<tr><td>eqw</td><td>[A, B, ...]</td><td>[c, A, B, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a_i = b_i ; \forall i \in {0, 1, 2, 3} \ 0, &amp; \text{otherwise}\ \end{cases}$</td></tr>
+</tbody></table>
+<h2 id="u32-operations"><a class="header" href="#u32-operations">u32 operations</a></h2>
+<p>Miden assembly provides a set of instructions which can perform operations on regular 32-bit integers. These instructions are described in the tables below.</p>
+<p>Many instructions have <em>safe</em> and <em>unsafe</em> versions. The safe versions ensure that input values are 32-bit integers, and fail if that's not the case. The <em>unsafe</em> versions do not perform these checks, and thus, should be used only if the inputs are known to be 32-bit integers. Supplying inputs which are greater than or equal to $2^{32}$ to <em>unsafe</em> operations results in undefined behavior.</p>
+<p>The primary benefit of using <em>unsafe</em> operations is performance: they can frequently be executed $2$ or $3$ times faster than their safe counterparts. In general, vast majority of the <em>unsafe</em> operations listed below can be executed in a single VM cycle.</p>
+<p>For instructions where one or more operands can be provided as immediate parameters (e.g., <code>u32add</code> and <code>u32add.b</code>), we provide stack transition diagrams only for the non-immediate version. For the immediate version, it can be assumed that the operand with the specified name is not present on the stack.</p>
+<h3 id="conversions-and-tests"><a class="header" href="#conversions-and-tests">Conversions and tests</a></h3>
+<table><thead><tr><th>Instruction</th><th>Stack input</th><th>Stack output</th><th>Notes</th></tr></thead><tbody>
+<tr><td>u32test</td><td>[a, ...]</td><td>[b, a, ...]</td><td>$b \leftarrow \begin{cases} 1, &amp; \text{if}\ a &lt; 2^{32} \ 0, &amp; \text{otherwise}\ \end{cases}$</td></tr>
+<tr><td>u32testw</td><td>[A, ...]</td><td>[b, A, ...]</td><td>$b \leftarrow \begin{cases} 1, &amp; \text{if}\ \forall\ i \in {0, 1, 2, 3}\ a_i &lt; 2^{32} \ 0, &amp; \text{otherwise}\ \end{cases}$</td></tr>
+<tr><td>u32assert</td><td>[a, ...]</td><td>[a, ...]</td><td>Fails if $a \ge 2^{32}$</td></tr>
+<tr><td>u32assertw</td><td>[A, ...]</td><td>[A, ...]</td><td>Fails if $\exists\ i \in {0, 1, 2, 3} \ni a_i \ge 2^{32}$</td></tr>
+<tr><td>u32cast</td><td>[a, ...]</td><td>[b, ...]</td><td>$b \leftarrow a \mod 2^{32}$</td></tr>
+<tr><td>u32split</td><td>[a, ...]</td><td>[c, b, ...]</td><td>$b \leftarrow a \mod 2^{32}$, $c \leftarrow \lfloor{a / 2^{32}}\rfloor$</td></tr>
+</tbody></table>
+<h3 id="arithmetic-operations"><a class="header" href="#arithmetic-operations">Arithmetic operations</a></h3>
+<table><thead><tr><th>Instruction</th><th>Stack_input</th><th>Stack_output</th><th>Notes</th></tr></thead><tbody>
+<tr><td>u32add <br> u32add.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow a + b$ <br> Fails if $max(a, b, c) \ge 2^{32}$</td></tr>
+<tr><td>u32add.full</td><td>[b, a, ...]</td><td>[d, c, ...]</td><td>$c \leftarrow (a + b) \mod 2^{32}$ <br> $d \leftarrow \begin{cases} 1, &amp; \text{if}\ (a + b) \ge 2^{32} \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Fails if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32add.unsafe</td><td>[b, a, ...]</td><td>[d, c, ...]</td><td>$c \leftarrow (a + b) \mod 2^{32}$, <br> $d \leftarrow \begin{cases} 1, &amp; \text{if}\ (a + b) \ge 2^{32} \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Undefined if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32addc</td><td>[b, a, c, ...]</td><td>[e, d, ...]</td><td>$d \leftarrow (a + b + c) \mod 2^{32}$ <br> $e \leftarrow \begin{cases} 1, &amp; \text{if}\ (a + b + c) \ge 2^{32} \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Fails if $max(a, b) \ge 2^{32}$ or $c &gt; 1$</td></tr>
+<tr><td>u32addc.unsafe</td><td>[b, a, c, ...]</td><td>[e, d, ...]</td><td>$d \leftarrow (a + b + c) \mod 2^{32}$, <br> $e \leftarrow \begin{cases} 1, &amp; \text{if}\ (a + b + c) \ge 2^{32} \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Undefined if $max(a, b) \ge 2^{32}$ <br> Fails if $c &gt; 1$</td></tr>
+<tr><td>u32sub <br> u32sub.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow (a - b)$ <br> Fails if $max(a, b) \ge 2^{32}$ or $a &lt; b$</td></tr>
+<tr><td>u32sub.full</td><td>[b, a, ...]</td><td>[d, c, ...]</td><td>$c \leftarrow (a - b) \mod 2^{32}$ <br> $d \leftarrow \begin{cases} 1, &amp; \text{if}\ a &lt; b \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Fails if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32sub.unsafe</td><td>[b, a, ...]</td><td>[d, c, ...]</td><td>$c \leftarrow (a - b) \mod 2^{32}$ <br> $d \leftarrow \begin{cases} 1, &amp; \text{if}\ a &lt; b \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Undefined if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32mul <br> u32mul.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow a \cdot b$ <br> Fails if $max(a, b, c) \ge 2^{32}$</td></tr>
+<tr><td>u32mul.full</td><td>[b, a, ...]</td><td>[d, c, ...]</td><td>$c \leftarrow (a \cdot b) \mod 2^{32}$ <br> $d \leftarrow \lfloor(a \cdot b) / 2^{32}\rfloor$ <br> Fails if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32mul.unsafe</td><td>[b, a, ...]</td><td>[d, c, ...]</td><td>$c \leftarrow (a \cdot b) \mod 2^{32}$ <br> $d \leftarrow \lfloor(a \cdot b) / 2^{32}\rfloor$ <br> Undefined if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32madd</td><td>[b, a, c, ...]</td><td>[e, d, ...]</td><td>$d \leftarrow (a \cdot b + c) \mod 2^{32}$ <br> $e \leftarrow \lfloor(a \cdot b + c) / 2^{32}\rfloor$ <br> Fails if $max(a, b, c) \ge 2^{32}$</td></tr>
+<tr><td>u32madd.unsafe</td><td>[b, a, c, ...]</td><td>[e, d, ...]</td><td>$d \leftarrow (a \cdot b + c) \mod 2^{32}$ <br> $e \leftarrow \lfloor(a \cdot b + c) / 2^{32}\rfloor$ <br> Undefined if $max(a, b, c) \ge 2^{32}$</td></tr>
+<tr><td>u32div <br> u32div.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \lfloor a / b\rfloor$ <br> Fails if $max(a, b) \ge 2^{32}$ or $b = 0$</td></tr>
+<tr><td>u32div.full</td><td>[b, a, ...]</td><td>[d, c, ...]</td><td>$c \leftarrow \lfloor a / b\rfloor$ <br> $d \leftarrow a \mod b$ <br> Fails if $max(a, b) \ge 2^{32}$ or $b = 0$</td></tr>
+<tr><td>u32div.unsafe</td><td>[b, a, ...]</td><td>[d, c, ...]</td><td>$c \leftarrow \lfloor a / b\rfloor$ <br> $d \leftarrow a \mod b$ <br> Fails if $b = 0$ <br> Undefined if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32mod <br> u32mod.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow a \mod b$ <br> Fails if $max(a, b) \ge 2^{32}$ or $b = 0$</td></tr>
+<tr><td>u32mod.unsafe</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow a \mod b$ <br> Fails if $b = 0$ <br> Undefined if $max(a, b) \ge 2^{32}$</td></tr>
+</tbody></table>
+<h3 id="bitwise-operations"><a class="header" href="#bitwise-operations">Bitwise operations</a></h3>
+<table><thead><tr><th>Instruction</th><th>Stack_input</th><th>Stack_output</th><th>Notes</th></tr></thead><tbody>
+<tr><td>u32and</td><td>[b, a, ...]</td><td>[c, ...]</td><td>Computes $c$ as a bitwise <code>AND</code> of binary representations of $a$ and $b$. <br> Fails if $max(a,b) \ge 2^{32}$</td></tr>
+<tr><td>u32or</td><td>[b, a, ...]</td><td>[c, ...]</td><td>Computes $c$ as a bitwise <code>OR</code> of binary representations of $a$ and $b$. <br> Fails if $max(a,b) \ge 2^{32}$</td></tr>
+<tr><td>u32xor</td><td>[b, a, ...]</td><td>[c, ...]</td><td>Computes $c$ as a bitwise <code>XOR</code> of binary representations of $a$ and $b$. <br> Fails if $max(a,b) \ge 2^{32}$</td></tr>
+<tr><td>u32not</td><td>[a, ...]</td><td>[b, ...]</td><td>Computes $b$ as a bitwise <code>NOT</code> of binary representation of $a$. <br> Fails if $a \ge 2^{32}$</td></tr>
+<tr><td>u32shl <br> u32shl.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow (a \cdot 2^b) \mod 2^{32}$ <br> Fails if $a \ge 2^{32}$ or $b &gt; 31$</td></tr>
+<tr><td>u32shr <br> u32shr.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \lfloor a/2^b \rfloor$ <br> Fails if $a \ge 2^{32}$ or $b &gt; 31$</td></tr>
+<tr><td>u32rotl <br> u32rotl.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>Computes $c$ by rotating a 32-bit representation of $a$ to the left by $b$ bits. <br> Fails if $a \ge 2^{32}$ or $b &gt; 31$</td></tr>
+<tr><td>u32rotr <br> u32rotr.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>Computes $c$ by rotating a 32-bit representation of $a$ to the right by $b$ bits. <br> Fails if $a \ge 2^{32}$ or $b &gt; 31$</td></tr>
+</tbody></table>
+<h3 id="comparison-operations-1"><a class="header" href="#comparison-operations-1">Comparison operations</a></h3>
+<table><thead><tr><th>Instruction</th><th>Stack_input</th><th>Stack_output</th><th>Notes</th></tr></thead><tbody>
+<tr><td>u32.eq <br> u32.eq.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a=b \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Fails if $max(a, b) \ge 2^{32}$ <br> Note: unsafe version is not provided because it is equivalent to simple <code>eq</code>.</td></tr>
+<tr><td>u32.neq <br> u32.neq.<em>b</em></td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a \ne b \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Fails if $max(a, b) \ge 2^{32}$ <br> Note: unsafe version is not provided because it is equivalent to simple <code>neq</code>.</td></tr>
+<tr><td>u32lt</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a &lt; b \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Fails if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32lt.unsafe</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a &lt; b \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Undefined if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32lte</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a \le b \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Fails if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32lte.unsafe</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a \le b \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Undefined if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32gt</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a &gt; b \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Fails if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32gt.unsafe</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a &gt; b \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Undefined if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32gte</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a \ge b \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Fails if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32gte.unsafe</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} 1, &amp; \text{if}\ a \ge b \ 0, &amp; \text{otherwise}\ \end{cases}$ <br> Undefined if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32min</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} a, &amp; \text{if}\ a &lt; b \ b, &amp; \text{otherwise}\ \end{cases}$ <br> Fails if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32min.unsafe</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} a, &amp; \text{if}\ a &lt; b \ b, &amp; \text{otherwise}\ \end{cases}$ <br> Undefined if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32max</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} a, &amp; \text{if}\ a &gt; b \ b, &amp; \text{otherwise}\ \end{cases}$ <br> Fails if $max(a, b) \ge 2^{32}$</td></tr>
+<tr><td>u32max.unsafe</td><td>[b, a, ...]</td><td>[c, ...]</td><td>$c \leftarrow \begin{cases} a, &amp; \text{if}\ a &gt; b \ b, &amp; \text{otherwise}\ \end{cases}$ <br> Undefined if $max(a, b) \ge 2^{32}$</td></tr>
+</tbody></table>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="input--output-operations"><a class="header" href="#input--output-operations">Input / output operations</a></h2>
+<p>Miden assembly provides a set of instructions for moving data between the stack and several other sources. These sources include:</p>
+<ul>
+<li><strong>Program code</strong>: values to be moved onto the stack can be hard-coded in a program's source code.</li>
+<li><strong>Environment</strong>: values can be moved onto the stack from environment variables. Currently, the only available environment variable is <em>stack_depth</em> which holds the current depth of the stack. In the future, other environment variables may be added.</li>
+<li><strong>Advice tape</strong>: values can be moved onto the stack from a non-deterministic advice tape contained within the advice provider. Values are always read from the head of the advice tape, and once a value is read, it is removed from the tape. There is no limit on the number of values in the advice tape.</li>
+<li><strong>Memory</strong>: values can be moved between the stack and random-access memory. The memory is word-addressable, meaning, four elements are located at each address, and we can read and write elements to/from memory in batches of four. Memory can be accessed via absolute memory references (i.e., via memory addresses) as well as via local procedure references (i.e., local index). The latter approach ensures that a procedure does not access locals of another procedure.</li>
+</ul>
+<p>In the future several other sources such as <em>storage</em> and <em>logs</em> may be added.</p>
+<h3 id="constant-inputs"><a class="header" href="#constant-inputs">Constant inputs</a></h3>
+<table><thead><tr><th>Instruction</th><th>Stack_input</th><th>Stack_output</th><th>Notes</th></tr></thead><tbody>
+<tr><td>push.<em>a</em> <br> push.<em>a</em>.<em>b</em> <br> push.<em>a</em>.<em>b</em>.<em>c</em>...</td><td>[...]</td><td>[a, ...] <br> [b, a, ...] <br> [c, b, a, ...]</td><td>Pushes values $a$, $b$, $c$ etc. onto the stack. Up to $16$ values can be specified. All values must be valid field elements in decimal (e.g., $123$) or hexadecimal (e.g., $0x7b$) representation.</td></tr>
+</tbody></table>
+<p>When specifying values in hexadecimal format, it is possible to omit the periods between individual values as long as total number of specified bytes is a multiple of $8$. That is, the following are semantically equivalent:</p>
+<pre><code>push.0x1234.0xabcd
+push.0x0000000000001234000000000000abcd
+</code></pre>
+<p>In both case the values must still encode valid field elements.</p>
+<h3 id="environment-inputs"><a class="header" href="#environment-inputs">Environment inputs</a></h3>
+<table><thead><tr><th>Instruction</th><th>Stack_input</th><th>Stack_output</th><th>Notes</th></tr></thead><tbody>
+<tr><td>push.env.sdepth</td><td>[...]</td><td>[d, ...]</td><td>$d \leftarrow stack.depth()$ <br> Pushes the current depth of the stack onto the stack.</td></tr>
+<tr><td>push.env.locaddr.<em>i</em></td><td>[...]</td><td>[a, ...]</td><td>$a \leftarrow address_of(i)$ <br> Pushes the absolute memory address of local memory at index $i$ onto the stack.</td></tr>
+</tbody></table>
+<h3 id="non-deterministic-inputs-1"><a class="header" href="#non-deterministic-inputs-1">Non-deterministic inputs</a></h3>
+<table><thead><tr><th>Instruction</th><th>Stack_input_</th><th>Stack_output</th><th>Notes</th></tr></thead><tbody>
+<tr><td>push.adv.<em>n</em></td><td>[ ... ]</td><td>[a, ... ]</td><td>$a \leftarrow tape.next()$ <br> Removes the next $n$ values from advice tape and pushes them onto the stack. Valid for $n \in {1, ..., 16}$. <br> Fails if the advice tape has fewer than $n$ values.</td></tr>
+<tr><td>loadw.adv</td><td>[0, 0, 0, 0, ... ]</td><td>[A, ... ]</td><td>$A \leftarrow tape.next_word()$ <br> Removes the next word (4 elements) from the advice tape and overwrites the top four stack elements with it. <br> Fails if the advice tape has fewer than $4$ values.</td></tr>
+</tbody></table>
+<h3 id="random-access-memory"><a class="header" href="#random-access-memory">Random access memory</a></h3>
+<p>As mentioned above, there are two ways to access memory in Miden VM. The first way is via memory addresses using the instructions listed below. The addresses are absolute - i.e., they don't depend on the procedure context. Memory addresses can be in the range $[0, 2^{32})$.</p>
+<p>Memory is guaranteed to be initialized to zeros. Thus, when reading from memory address which hasn't been written to previously, zero elements will be returned.</p>
+<table><thead><tr><th>Instruction</th><th>Stack_input___</th><th>Stack_output</th><th>Notes</th></tr></thead><tbody>
+<tr><td>push.mem <br> push.mem.<em>a</em></td><td>[a, ... ]</td><td>[v, ... ]</td><td>$a \leftarrow mem[a][0]$ <br> Reads a word (4 elements) from memory at address <em>a</em>, and pushes the first element of the word onto the stack. If $a$ is provided via the stack, it is removed from the stack first. <br> Fails if $a \ge 2^{32}$</td></tr>
+<tr><td>pushw.mem <br> pushw.mem.<em>a</em></td><td>[a, ... ]</td><td>[A, ... ]</td><td>$A \leftarrow mem[a]$ <br> Reads a word from memory at address $a$ and pushes it onto the stack. If $a$ is provided via the stack, it is removed from the stack first. <br> Fails if $a \ge 2^{32}$</td></tr>
+<tr><td>loadw.mem <br> loadw.mem.<em>a</em></td><td>[a, 0, 0, 0, 0, ...]</td><td>[A, ... ]</td><td>$A \leftarrow mem[a]$ <br> Reads a word from memory at address $a$ and overwrites top four stack elements with it. If $a$ is provided via the stack, it is removed from the stack first. <br> Fails if $a \ge 2^{32}$</td></tr>
+<tr><td>pop.mem <br> pop.mem.<em>a</em></td><td>[a, v, ...]</td><td>[ ... ]</td><td>$[v, 0, 0, 0] \rightarrow mem[a]$ <br> Pops an element off the stack and stores it as the first element of the word in memory at address $a$. All other elements of the word are set to $0$. If $a$ is provided via the stack, it is removed from the stack first. <br> Fails if $a \ge 2^{32}$</td></tr>
+<tr><td>popw.mem <br> popw.mem.<em>a</em></td><td>[a, A, ...]</td><td>[ ... ]</td><td>$A \rightarrow mem[a]$ <br> Pops the top four elements off the stack and stores them in memory at address $a$. If $a$ is provided via the stack, it is removed from the stack first. <br> Fails if $a \ge 2^{32}$</td></tr>
+<tr><td>storew.mem <br> storew.mem.<em>a</em></td><td>[a, A, ...]</td><td>[A, ... ]</td><td>$A \rightarrow mem[a]$ <br> Stores the top four elements of the stack in memory at address $a$. If $a$ is provided via the stack, it is removed from the stack first. <br> Fails if $a \ge 2^{32}$</td></tr>
+</tbody></table>
+<p>The second way to access memory is via procedure locals using the instructions listed below. These instructions are available only in procedure context. The number of locals available to a given procedure must be specified at <a href="user_docs/assembly/io_operations.html#Procedures">procedure declaration</a> time, and trying to access more locals than was declared will result in a compile-time error. The number of locals per procedure is not limited, but the total number of locals available to all procedures at runtime must be smaller than $2^{32}$.</p>
+<table><thead><tr><th>Instruction</th><th>Stack_input_</th><th>Stack_output</th><th>Notes</th></tr></thead><tbody>
+<tr><td>push.local.<em>i</em></td><td>[ ... ]</td><td>[v, ... ]</td><td>$v \leftarrow local[i][0]$ <br> Reads a word (4 elements) from local memory at index <em>i</em>, and pushes the first element of the word onto the stack.</td></tr>
+<tr><td>pushw.local.<em>i</em></td><td>[...]</td><td>[A, ... ]</td><td>$A \leftarrow local[i]$ <br> Reads a word from local memory at index $i$ and pushes it onto the stack.</td></tr>
+<tr><td>loadw.local.<em>i</em></td><td>[0, 0, 0, 0, ...]</td><td>[A, ... ]</td><td>$A \leftarrow local[i]$ <br> Reads a word from local memory at index $i$ and overwrites top four stack elements with it.</td></tr>
+<tr><td>pop.local.<em>i</em></td><td>[v, ...]</td><td>[ ... ]</td><td>$[v, 0, 0, 0] \rightarrow local[i]$ <br> Pops an element off the stack and stores it as the first element of the word in local memory at index $i$. All other elements of the word are set to $0$.</td></tr>
+<tr><td>popw.local.<em>i</em></td><td>[A, ...]</td><td>[ ... ]</td><td>$A \rightarrow local[i]$ <br> Pops the top four elements off the stack and stores them in local memory at index $i$.</td></tr>
+<tr><td>storew.local.<em>i</em></td><td>[A, ...]</td><td>[A, ... ]</td><td>$A \rightarrow local[i]$ <br> Stores the top four elements of the stack in local memory at index $i$.</td></tr>
+</tbody></table>
+<p>Unlike regular memory, procedure locals are not guaranteed to be initialized to zeros. Thus, when working with locals, one must assume that before a local memory address has been written to, it contains &quot;garbage&quot;.</p>
+<p>Internally in the VM, procedure locals are stored at memory offset stating at $2^{30}$. Thus, every procedure local has an absolute address in regular memory. The <code>push.env.locaddr</code> is provided specifically to map an index of a procedure's local to an absolute address so that it can be passed to downstream procedures, when needed.</p>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="cryptographic-operations"><a class="header" href="#cryptographic-operations">Cryptographic operations</a></h2>
+<p>Miden assembly provides a set of instructions for performing common cryptographic operations. These instructions are listed in the table below.</p>
+<h3 id="hashing-and-merkle-trees"><a class="header" href="#hashing-and-merkle-trees">Hashing and Merkle trees</a></h3>
+<p><a href="https://eprint.iacr.org/2020/1143">Rescue Prime</a> is the native hash function of Miden VM. The parameters of the hash function were chosen to provide 128-bit security level against preimage and collision attacks. The function operates over a state of 12 field elements, and requires 7 rounds for a single permutation. However, due to its special status within the VM, computing Rescue Prime hashes can be done very efficiently. For example, applying a permutation of the hash function can be done in a single VM cycle. </p>
+<table><thead><tr><th>Instruction</th><th>Stack_input</th><th>Stack_output</th><th>Notes</th></tr></thead><tbody>
+<tr><td>rpperm</td><td>[C, B, A, ...]</td><td>[F, E, D, ...]</td><td>${D, E, F} \leftarrow permute(A, B, C)$ <br> where, $permute()$ computes a Rescue Prime permutation.</td></tr>
+<tr><td>rphash</td><td>[B, A, ...]</td><td>[C, ...]</td><td>$C \leftarrow hash(A,B)$ <br> where, $hash()$ computes a 2-to-1 Rescue Prime hash.</td></tr>
+<tr><td>mtree.get</td><td>[d, i, R, ...]</td><td>[V, R, ...]</td><td>Verifies that a Merkle tree with root $R$ opens to node $V$ at depth $d$ and index $i$. Merkle tree with root $R$ must be present in the advice provider, otherwise execution fails.</td></tr>
+<tr><td>mtree.set</td><td>[d, i, V, R, ...]</td><td>[V, R', ...]</td><td>Updates a node in the Merkle tree with root $R$ at depth $d$ and index $i$ to value $V$. $R'$ is the Merkle root of the resulting tree. Merkle tree with root $R$ must be present in the advice provider, otherwise execution fails. At the end of the operation Merkle tree with root $R$ is removed from the advice provider.</td></tr>
+<tr><td>mtree.cwm</td><td>[d, i, V, R, ...]</td><td>[V, R', R, ...]</td><td>Copies a Merkle tree with root $R$ and updates a node at depth $d$ and index $i$ in the copied tree to value $V$. $R'$ is the Merkle root of the new tree. Merkle tree with root $R$ must be present in the advice provider, otherwise execution fails. At the end of the operation the advice provider will contain both Merkle trees.</td></tr>
+</tbody></table>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="debugging"><a class="header" href="#debugging">Debugging</a></h2>
+<p>To support basic debugging capabilities, Miden assembly provides <code>debug</code> instruction. This instruction prints out the state of the VM at the time when the <code>debug</code> instruction is executed. Debug instruction can be parameterized as follows:</p>
+<ul>
+<li><code>debug.all</code> prints out the entire state of the VM (stack and RAM).</li>
+<li><code>debug.stack</code> prints out the entire contents of the stack.</li>
+<li><code>debug.stack.&lt;n&gt;</code> prints out the top $n$ items of the stack. $n$ must be an integer greater than $0$.</li>
+<li><code>debug.mem</code> prints out the entire contents of RAM.</li>
+<li><code>debug.mem.&lt;n&gt;</code> prints out contents of memory at address $n$.</li>
+<li><code>debug.mem.&lt;n&gt;.&lt;m&gt;</code> prints out the contents of memory starting at address $n$ and ending at address $m$ (both inclusive). $m$ must be greater than $n$.</li>
+<li><code>debug.local</code> prints out all locals of the currently executing procedure.</li>
+<li><code>debug.local.&lt;n&gt;</code> prints out contents of the local at index $n$ for the currently executing procedure.</li>
+</ul>
+<p>Debug instructions do not affect VM state, do not change program hash, and are omitted when Miden assembly is serialized into binary format.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="miden-standard-library"><a class="header" href="#miden-standard-library">Miden Standard Library</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="design"><a class="header" href="#design">Design</a></h1>
 <p>TODO</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="background-material"><a class="header" href="#background-material">Background Material</a></h1>
