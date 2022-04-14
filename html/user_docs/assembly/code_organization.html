@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Miden Assembly - Miden VM</title>
+        <title>Code Organization - Miden VM</title>
         <!-- Custom HTML head -->
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="">
@@ -75,7 +75,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../index.html">Miden</a></li><li class="chapter-item expanded "><a href="../../intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../../user_docs.html"><strong aria-hidden="true">2.</strong> User Documentation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../user_docs/overview/vm_overview.html"><strong aria-hidden="true">2.1.</strong> Miden VM Overview</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/miden_assembly.html" class="active"><strong aria-hidden="true">2.2.</strong> Miden Assembly</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../user_docs/assembly/code_organization.html"><strong aria-hidden="true">2.2.1.</strong> Code Organization</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/inputs_and_outputs.html"><strong aria-hidden="true">2.2.2.</strong> Inputs And Outputs</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/flow_control.html"><strong aria-hidden="true">2.2.3.</strong> Flow Control</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/field_operations.html"><strong aria-hidden="true">2.2.4.</strong> Field Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/u32_operations.html"><strong aria-hidden="true">2.2.5.</strong> u32 Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/io_operations.html"><strong aria-hidden="true">2.2.6.</strong> Input / Output Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/cryptographic_operations.html"><strong aria-hidden="true">2.2.7.</strong> Cryptographic Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/debugging.html"><strong aria-hidden="true">2.2.8.</strong> Debugging</a></li></ol></li><li class="chapter-item expanded "><a href="../../miden_stdlib.html"><strong aria-hidden="true">2.3.</strong> Miden Standard Library</a></li></ol></li><li class="chapter-item expanded "><a href="../../design.html"><strong aria-hidden="true">3.</strong> Design</a></li><li class="chapter-item expanded "><a href="../../background.html"><strong aria-hidden="true">4.</strong> Background Material</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../index.html">Miden</a></li><li class="chapter-item expanded "><a href="../../intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../../user_docs.html"><strong aria-hidden="true">2.</strong> User Documentation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../user_docs/overview/vm_overview.html"><strong aria-hidden="true">2.1.</strong> Miden VM Overview</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/miden_assembly.html"><strong aria-hidden="true">2.2.</strong> Miden Assembly</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../user_docs/assembly/code_organization.html" class="active"><strong aria-hidden="true">2.2.1.</strong> Code Organization</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/flow_control.html"><strong aria-hidden="true">2.2.2.</strong> Flow Control</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/field_operations.html"><strong aria-hidden="true">2.2.3.</strong> Field Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/u32_operations.html"><strong aria-hidden="true">2.2.4.</strong> u32 Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/io_operations.html"><strong aria-hidden="true">2.2.5.</strong> Input / Output Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/cryptographic_operations.html"><strong aria-hidden="true">2.2.6.</strong> Cryptographic Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/debugging.html"><strong aria-hidden="true">2.2.7.</strong> Debugging</a></li></ol></li><li class="chapter-item expanded "><a href="../../miden_stdlib.html"><strong aria-hidden="true">2.3.</strong> Miden Standard Library</a></li></ol></li><li class="chapter-item expanded "><a href="../../design.html"><strong aria-hidden="true">3.</strong> Design</a></li><li class="chapter-item expanded "><a href="../../background.html"><strong aria-hidden="true">4.</strong> Background Material</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -134,49 +134,63 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="miden-assembly"><a class="header" href="#miden-assembly">Miden Assembly</a></h1>
-<h6 id="tags-specs-assembly-draft"><a class="header" href="#tags-specs-assembly-draft">tags: <code>specs</code> <code>assembly</code> <code>draft</code></a></h6>
-<p>Version: v0.2</p>
-<p>Miden assembly is a simple, low-level language for writing programs for Miden VM. It stands just above raw Miden VM instruction set, and in fact, many instructions of Miden assembly map directly to raw instructions of Miden VM.</p>
-<p>Before Miden assembly can be executed on Miden VM, it needs to be compiled into a <a href="https://hackmd.io/yr-ieh7SSKOzWw7Kdo9gnA">Program MAST</a> (Merkelized Abstract Syntax Tree) which is a binary tree of code blocks each containing raw Miden VM instructions.</p>
-<p><img src="https://i.imgur.com/NnV0bwN.png" alt="" /></p>
-<p>As compared to raw Miden VM instructions, Miden assembly has several advantages:</p>
-<ol>
-<li>Miden assembly is intended to be a more stable external interface for the VM. That is, while we plan to make signficant changes to the underlying VM to optimize it for stability, performance etc., we intend to make very few breaking changes to Miden assembly.</li>
-<li>Miden assembly natively supports control flow expressions which the assembler automatically transforms into a program MAST. This greatly simplifies writing programs with complex execution logic.</li>
-<li>Miden assembly supports <em>macro instructions</em>. These instructions expand into short sequences of raw Miden VM instructions making it easier to encode common operations.</li>
-<li>Miden assembly supports <em>procedures</em>. These are stand-alone blocks of code which the assembler inlines into program MAST at compile time. This improves program modularity and code organization.</li>
-</ol>
-<p>The last two points also make Miden assembly much more concise as compared to the raw program MAST. This may be important in the blockchain context where pubic programs need to be stored on chain.</p>
-<h3 id="terms-and-notations"><a class="header" href="#terms-and-notations">Terms and notations</a></h3>
-<p>In this note we use the following terms and notations:</p>
-<ul>
-<li>$p$ is the modulus of the VM's base field which is equal to $2^{64} - 2^{32} + 1$.</li>
-<li>A <em>binary</em> value means a field element which is either $0$ or $1$.</li>
-<li>Inequality comparisons are assumed to be performed on integer representations of field elements in the range $[0, p)$.</li>
-</ul>
-<h3 id="design-goals"><a class="header" href="#design-goals">Design goals</a></h3>
-<p>The design of Miden assembly tries to achieve the following goals:</p>
-<ol>
-<li>Miden assembly should be an easy compilation target for high-level languages.</li>
-<li>Programs written in Miden assembly should be readable, even if the code is generated by a compiler from a high-level language.</li>
-<li>Control flow should be easy to understand to help in manual inspection, formal verification, and optimization.</li>
-<li>Compilation of Miden assembly into Miden program MAST should be as straight-forward as possible.</li>
-<li>Serialization of Miden assembly into a binary representation should be as compact and as straight-forward as possible.</li>
-</ol>
-<p>In order to achieve the first goal, Miden assembly exposes a set of native operations over 32-bit integers and supports linear read-write memory. Thus, from the stand-point of a higher-level language compiler, Miden VM can be viewed as a regular 32-bit stack machine with linear read-write memory.</p>
-<p>In order to achieve the second and third goals, Miden assembly facilitates flow control via high-level constructs like <code>while</code> loops, <code>if-else</code> statements, and function calls with statically defined targets. Thus, for example, there are no explicit <code>jump</code> instructions.</p>
-<p>In order to achieve the fourth goal, Miden assembly retains direct access to the VM stack rather than abstracting it away with higher-level constructs and named variables.</p>
-<p>Lastly, in order to achieve the fifth goal, each instruction of Miden assembly can be encoded using a single byte. The resulting byte-code is simply a one-to-one mapping of instructions to their binary values.</p>
+                        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h2 id="code-organization"><a class="header" href="#code-organization">Code organization</a></h2>
+<p>A Miden assembly program is just a sequence of instructions each describing a specific directive or an operation. You can use any combination of whitespace characters to separate one instruction from another.</p>
+<p>In turn, Miden assembly instructions are just keywords which can be parameterized by zero or more parameters. The notation for specifying parameters is <em>keyword.param1.param2</em> - i.e., the parameters are separated by periods. For example, <code>push.123</code> instruction denotes a <code>push</code> operation which is parameterized by value <code>123</code>.</p>
+<p>Currently, Miden assembly provides two types of code organization blocks: <em>scripts</em> and <em>procedures</em>. In the future, additional blocks such as modules and functions will be added.</p>
+<h3 id="scripts"><a class="header" href="#scripts">Scripts</a></h3>
+<p>A <em>script</em> block is used to define an executable program. A script must start with a <code>begin</code> instruction and terminate with an <code>end</code> instruction. For example:</p>
+<pre><code>begin
+    &lt;instructions&gt;
+end
+</code></pre>
+<p>When Miden assembly code is executed, the execution starts at the first instruction following the <code>begin</code> instruction of the script. A script block is expected to be the last block in a program and can be followed only by comment blocks.</p>
+<h3 id="procedures"><a class="header" href="#procedures">Procedures</a></h3>
+<p>A <em>procedure</em> block is used to define a frequently-used sequence of instructions. A procedure must start with a <code>proc.&lt;label&gt;.&lt;number of locals&gt;</code> instruction and terminate with an <code>end</code> instruction. For example:</p>
+<pre><code>proc.foo.2
+    &lt;instructions&gt;
+end
+</code></pre>
+<p>A procedure label must start with a letter and can contain any combination of numbers, ASCII letters, and underscores (<code>_</code>).</p>
+<p>The number of locals specifies the number of memory-based local words a procedure can access (via <code>load.local</code>, <code>store.local</code>, and other instructions). If a procedure doesn't need any memory-based locals, this parameter can be omitted or set to <code>0</code>. The number of locals per procedure is not limited, but the total number of locals available to all procedures at runtime must be smaller than <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8141079999999999em;vertical-align:0em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141079999999999em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">32</span></span></span></span></span></span></span></span></span></span></span></span>.</p>
+<p>To execute a procedure an <code>exec.&lt;label&gt;</code> instruction should be used. For example:</p>
+<pre><code>exec.foo
+</code></pre>
+<p>During compilation, procedures are inlined at their call sites. Thus, from the standpoint of the final program, executing procedures is indistinguishable from manually including procedure code in place of the <code>exec</code> instruction.</p>
+<p>A procedure may execute any other previously defined procedure from the same source, but it cannot execute itself or any of the subsequent procedures. Thus, recursive procedure calls are not possible. For example, the following code block defines a script with two procedures:</p>
+<pre><code>proc.foo
+    &lt;instructions&gt;
+end
+
+proc.bar
+    &lt;instructions&gt;
+    exec.foo
+    &lt;instructions&gt;
+end
+
+begin
+    &lt;instructions&gt;
+    exec.bar
+    &lt;instructions&gt;
+    exec.foo
+end
+</code></pre>
+<h3 id="comments"><a class="header" href="#comments">Comments</a></h3>
+<p>Miden assembly allows annotating code with simple comments. The comments must be placed between two <code>#</code> (pound) characters which must be surrounded by whitespace on both sides. For example:</p>
+<pre><code># this is a comment #
+</code></pre>
+<p>Using a pound character within a comment is not allowed.</p>
+<p>When Miden assembly is serialized into binary format, comments are not retained.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../../user_docs/overview/vm_overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../../user_docs/assembly/miden_assembly.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
-                            <a rel="next" href="../../user_docs/assembly/code_organization.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../../user_docs/assembly/flow_control.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         <div style="clear: both"></div>
@@ -185,10 +199,10 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../../user_docs/overview/vm_overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../../user_docs/assembly/miden_assembly.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
-                    <a rel="next" href="../../user_docs/assembly/code_organization.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../../user_docs/assembly/flow_control.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

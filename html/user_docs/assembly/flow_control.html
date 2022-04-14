@@ -75,7 +75,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../index.html">Miden</a></li><li class="chapter-item expanded "><a href="../../intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../../user_docs.html"><strong aria-hidden="true">2.</strong> User Documentation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../user_docs/overview/vm_overview.html"><strong aria-hidden="true">2.1.</strong> Miden VM Overview</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/miden_assembly.html"><strong aria-hidden="true">2.2.</strong> Miden Assembly</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../user_docs/assembly/code_organization.html"><strong aria-hidden="true">2.2.1.</strong> Code Organization</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/inputs_and_outputs.html"><strong aria-hidden="true">2.2.2.</strong> Inputs And Outputs</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/flow_control.html" class="active"><strong aria-hidden="true">2.2.3.</strong> Flow Control</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/field_operations.html"><strong aria-hidden="true">2.2.4.</strong> Field Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/u32_operations.html"><strong aria-hidden="true">2.2.5.</strong> u32 Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/io_operations.html"><strong aria-hidden="true">2.2.6.</strong> Input / Output Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/cryptographic_operations.html"><strong aria-hidden="true">2.2.7.</strong> Cryptographic Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/debugging.html"><strong aria-hidden="true">2.2.8.</strong> Debugging</a></li></ol></li><li class="chapter-item expanded "><a href="../../miden_stdlib.html"><strong aria-hidden="true">2.3.</strong> Miden Standard Library</a></li></ol></li><li class="chapter-item expanded "><a href="../../design.html"><strong aria-hidden="true">3.</strong> Design</a></li><li class="chapter-item expanded "><a href="../../background.html"><strong aria-hidden="true">4.</strong> Background Material</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../index.html">Miden</a></li><li class="chapter-item expanded "><a href="../../intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../../user_docs.html"><strong aria-hidden="true">2.</strong> User Documentation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../user_docs/overview/vm_overview.html"><strong aria-hidden="true">2.1.</strong> Miden VM Overview</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/miden_assembly.html"><strong aria-hidden="true">2.2.</strong> Miden Assembly</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../user_docs/assembly/code_organization.html"><strong aria-hidden="true">2.2.1.</strong> Code Organization</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/flow_control.html" class="active"><strong aria-hidden="true">2.2.2.</strong> Flow Control</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/field_operations.html"><strong aria-hidden="true">2.2.3.</strong> Field Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/u32_operations.html"><strong aria-hidden="true">2.2.4.</strong> u32 Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/io_operations.html"><strong aria-hidden="true">2.2.5.</strong> Input / Output Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/cryptographic_operations.html"><strong aria-hidden="true">2.2.6.</strong> Cryptographic Operations</a></li><li class="chapter-item expanded "><a href="../../user_docs/assembly/debugging.html"><strong aria-hidden="true">2.2.7.</strong> Debugging</a></li></ol></li><li class="chapter-item expanded "><a href="../../miden_stdlib.html"><strong aria-hidden="true">2.3.</strong> Miden Standard Library</a></li></ol></li><li class="chapter-item expanded "><a href="../../design.html"><strong aria-hidden="true">3.</strong> Design</a></li><li class="chapter-item expanded "><a href="../../background.html"><strong aria-hidden="true">4.</strong> Background Material</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -134,7 +134,8 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h2 id="flow-control"><a class="header" href="#flow-control">Flow control</a></h2>
+                        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h2 id="flow-control"><a class="header" href="#flow-control">Flow control</a></h2>
 <p>As mentioned above, Miden assembly provides high-level constructs to facilitate flow control. These constructs are:</p>
 <ul>
 <li><em>if-else</em> expressions for conditional execution.</li>
@@ -152,8 +153,8 @@ end
 <p>where <code>instructions</code> can be a sequence of any instructions, including nested control structures; the <code>else</code> clause is optional. The above does the following:</p>
 <ol>
 <li>Pops the top item from the stack.</li>
-<li>If the value of the item is $1$, instructions in the <code>if.true</code> branch are executed.</li>
-<li>If the value of the item is $0$, instructions in the <code>else</code> branch are executed.</li>
+<li>If the value of the item is <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.64444em;vertical-align:0em;"></span><span class="mord">1</span></span></span></span>, instructions in the <code>if.true</code> branch are executed.</li>
+<li>If the value of the item is <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.64444em;vertical-align:0em;"></span><span class="mord">0</span></span></span></span>, instructions in the <code>else</code> branch are executed.</li>
 <li>If the value is not binary, the execution fails.</li>
 </ol>
 <p>A note on performance: using <em>if-else</em> statements incurs a small, but non-negligible overhead. Thus, for simple conditional statements, it may be more efficient to compute the result of both branches, and then select the result using <a href="#Conditional-manipulation">conditional drop</a> instructions.</p>
@@ -166,7 +167,7 @@ end
 <p>where:</p>
 <ul>
 <li><code>instructions</code> can be a sequence of any instructions, including nested control structures.</li>
-<li><code>count</code> is the number of times the <code>instructions</code> sequence should be repeated (e.g. <code>repeat.10</code>). <code>count</code> must be an integer greater than $0$.</li>
+<li><code>count</code> is the number of times the <code>instructions</code> sequence should be repeated (e.g. <code>repeat.10</code>). <code>count</code> must be an integer greater than <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.64444em;vertical-align:0em;"></span><span class="mord">0</span></span></span></span>.</li>
 </ul>
 <h3 id="condition-controlled-loops"><a class="header" href="#condition-controlled-loops">Condition-controlled loops</a></h3>
 <p>Executing a sequence of instructions zero or more times based on some condition can be accomplished with <em>while loop</em> expressions. These expressions look like so:</p>
@@ -177,11 +178,11 @@ end
 <p>where <code>instructions</code> can be a sequence of any instructions, including nested control structures. The above does the following:</p>
 <ol>
 <li>Pops the top item from the stack.</li>
-<li>If the value of the item is $1$, <code>instructions</code> in the loop body are executed.
-a. After the body is executed, the stack is popped again, and if the popped value is $1$, the body is executed again.
-b. If the popped value is $0$, the loop is exited.
+<li>If the value of the item is <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.64444em;vertical-align:0em;"></span><span class="mord">1</span></span></span></span>, <code>instructions</code> in the loop body are executed.
+a. After the body is executed, the stack is popped again, and if the popped value is <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.64444em;vertical-align:0em;"></span><span class="mord">1</span></span></span></span>, the body is executed again.
+b. If the popped value is <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.64444em;vertical-align:0em;"></span><span class="mord">0</span></span></span></span>, the loop is exited.
 c. If the popped value is not binary, the execution fails.</li>
-<li>If the value of the item is $0$, execution of loop body is skipped.</li>
+<li>If the value of the item is <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.64444em;vertical-align:0em;"></span><span class="mord">0</span></span></span></span>, execution of loop body is skipped.</li>
 <li>If the value is not binary, the execution fails.</li>
 </ol>
 
@@ -189,7 +190,7 @@ c. If the popped value is not binary, the execution fails.</li>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../../user_docs/assembly/inputs_and_outputs.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../../user_docs/assembly/code_organization.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                             <a rel="next" href="../../user_docs/assembly/field_operations.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
@@ -201,7 +202,7 @@ c. If the popped value is not binary, the execution fails.</li>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../../user_docs/assembly/inputs_and_outputs.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../../user_docs/assembly/code_organization.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                     <a rel="next" href="../../user_docs/assembly/field_operations.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
