@@ -6,10 +6,13 @@ use std::{
     path::Path,
 };
 
+mod stdlib_docs;
+
 // CONSTANTS
 // ================================================================================================
 
 const ASM_DIR_PATH: &str = "./asm";
+const STDLIB_DOC_FUNCTIONS_FILE_PATH: &str = "./docs";
 const ASM_FILE_PATH: &str = "./src/asm.rs";
 
 // TYPE ALIASES
@@ -38,7 +41,13 @@ fn main() {
         .expect("failed to read modules from the asm directory");
 
     // write the modules into the asm file
-    write_asm_rs(modules).expect("failed to write modules into the module file");
+    write_asm_rs(&modules).expect("failed to write modules into the module file");
+
+    // updates the documentation of these modules
+    stdlib_docs::build_stdlib_docs(
+        &modules,
+        STDLIB_DOC_FUNCTIONS_FILE_PATH,
+    );
 }
 
 // HELPER FUNCTIONS
@@ -91,7 +100,7 @@ fn read_modules(fs_path: &Path, ns_path: String, modules: &mut ModuleMap) -> Res
 
 /// Writes Miden assembly modules into a single `asm.rs` file.
 #[rustfmt::skip]
-fn write_asm_rs(modules: ModuleMap) -> Result<()> {
+fn write_asm_rs(modules: &ModuleMap) -> Result<()> {
     // create the module file
     let mut asm_file = File::create(ASM_FILE_PATH)?;
 
