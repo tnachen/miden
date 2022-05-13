@@ -319,8 +319,8 @@
 <div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
 <h1 id="user-documentation"><a class="header" href="#user-documentation">User Documentation</a></h1>
 <ul>
-<li><a href="user_docs/./miden_assembly.html">Miden Assembly</a></li>
-<li><a href="user_docs/./miden_stdlib.html">Miden Standard Library</a></li>
+<li><a href="user_docs/./assembly/main.html">Miden Assembly</a></li>
+<li><a href="user_docs/./stdlib/main.html">Miden Standard Library</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
 <h2 id="miden-vm-overview"><a class="header" href="#miden-vm-overview">Miden VM overview</a></h2>
@@ -664,6 +664,16 @@ push.0x0000000000001234000000000000abcd
 <p>Debug instructions do not affect VM state, do not change program hash, and are omitted when Miden assembly is serialized into binary format.</p>
 <div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
 <h1 id="miden-standard-library"><a class="header" href="#miden-standard-library">Miden Standard Library</a></h1>
+<p>Miden standard library is a collection of procedures that's available to execute from any Miden assembly.</p>
+<h2 id="functions-documentation"><a class="header" href="#functions-documentation">Functions documentation</a></h2>
+<p>The list of modules available:</p>
+<ul>
+<li>std::crypto::hashes::blake3[./blake3_hashes.md]</li>
+<li>std::crypto::hashes::keccak256[./keccak256_hashes.md]</li>
+<li>std::crypto::hashes::sha256[./sha256_hashes.md]</li>
+<li>std::math::u256[./u256_math.md]</li>
+<li>std::math::u64[./u64_math.md]</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
 <h1 id="design"><a class="header" href="#design">Design</a></h1>
 <p>TODO</p>
