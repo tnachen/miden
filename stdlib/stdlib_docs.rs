@@ -57,6 +57,72 @@ impl Stdlib {
     }
 }
 
+/// A renderer renders a stdlib struct into a particular doc format and index (e.g: markdown, etc)
+trait Renderer {
+    // Render writes out the document files into the output directory 
+    fn render(stdlib: &Stdlib, output_dir: &str);
+}
+
+struct MarkdownRenderer {}
+
+impl Renderer for MarkdownRenderer {
+    fn render(stdlib: &Stdlib, output_dir: &str) {
+        // Remove functions folder to re-generate
+        fs::remove_dir_all(doc_functions_path).unwrap();
+        fs::create_dir(doc_functions_path).unwrap();
+
+        // Write per module markdown file
+        for (ns, module) in &stdlib.modules {
+            let file_name = module.markdown_file_name();
+            let file_path = Path::new(doc_functions_path).join(file_name);
+            println!("{}", file_path.as_os_str().to_str().unwrap());
+            let mut f = fs::OpenOptions::new()
+                .write(true)
+                .append(true) // This is needed to append to file
+                .create(true)
+                .open(file_path)
+                .expect("unable to open stdlib markdown file");
+
+            // Render modules into markdown
+            f.write_all(module.comments.join("\n").as_bytes())
+                .expect("unable to write module comments");
+            let header = format!(
+                "\n## {}\n| Instruction | Description | \n| ----------- | ------------- |\n",
+                ns
+            );
+            f.write_all(header.as_bytes())
+                .expect("unable to write header to writer");
+            for func in module.functions.iter() {
+                let func_output = format!(
+                    "| {} | {} |\n",
+                    func.name,
+                    func.comments.join("<br />").replace('|', "\\|")
+                );
+                f.write_all(func_output.as_bytes())
+                    .expect("unable to write func to writer");
+            }
+        }
+
+        let index_file_path = Path::new(doc_functions_path).join("main.md");
+        let mut index_file = fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(index_file_path)
+            .expect("unable to open stdlib markdown index file");
+
+
+        // Write module index markdown.
+        // index markdown is included in the stdlib main page for accessing each module.
+        for (ns, module) in &stdlib.modules {
+            index_file
+                .write_all(
+                    format!("- [{}](./{})\n", ns, module.markdown_file_name()).as_bytes(),
+                )
+                .expect("unable to write file name to index");
+        }
+    }
+}
+
 
 #[derive(PartialEq)]
 enum AsmSourceState {
@@ -75,65 +141,7 @@ pub fn build_stdlib_docs(module_map: &ModuleMap, doc_functions_path: &str) {
     }
 
     // Render the modules into markdown
-    write_markdown(&stdlib, doc_functions_path);
-}
-
-// Generates the markdown files in the functions directory and update the index
-// files for mdbook to include in the doc generation.
-fn write_markdown(stdlib: &Stdlib, doc_functions_path: &str) {
-    // Remove functions folder to re-generate
-    fs::remove_dir_all(doc_functions_path).unwrap();
-    fs::create_dir(doc_functions_path).unwrap();
-
-    // Write per module markdown file
-    for (ns, module) in &stdlib.modules {
-        let file_name = module.markdown_file_name();
-        let file_path = Path::new(doc_functions_path).join(file_name);
-        println!("{}", file_path.as_os_str().to_str().unwrap());
-        let mut f = fs::OpenOptions::new()
-            .write(true)
-            .append(true) // This is needed to append to file
-            .create(true)
-            .open(file_path)
-            .expect("unable to open stdlib markdown file");
-
-        // Render modules into markdown
-        f.write_all(module.comments.join("\n").as_bytes())
-            .expect("unable to write module comments");
-        let header = format!(
-            "\n## {}\n| Instruction | Description | \n| ----------- | ------------- |\n",
-            ns
-        );
-        f.write_all(header.as_bytes())
-            .expect("unable to write header to writer");
-        for func in module.functions.iter() {
-            let func_output = format!(
-                "| {} | {} |\n",
-                func.name,
-                func.comments.join("<br />").replace('|', "\\|")
-            );
-            f.write_all(func_output.as_bytes())
-                .expect("unable to write func to writer");
-        }
-    }
-
-    let index_file_path = Path::new(doc_functions_path).join("main.md");
-    let mut index_file = fs::OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(index_file_path)
-        .expect("unable to open stdlib markdown index file");
-
-
-    // Write module index markdown.
-    // index markdown is included in the stdlib main page for accessing each module.
-    for (ns, module) in &stdlib.modules {
-        index_file
-            .write_all(
-                format!("- [{}](./{})\n", ns, module.markdown_file_name()).as_bytes(),
-            )
-            .expect("unable to write file name to index");
-    }
+    MarkdownRenderer{}.render(&stdlib, doc_functions_path);
 }
 
 // Parses the namespace and source file into stdlib Module.
